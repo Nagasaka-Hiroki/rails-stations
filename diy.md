@@ -1,9 +1,9 @@
 # 作業メモ
 自分の操作のメモを途中からだがつけていく。
 
-## コマンドなどのメモ
+# コマンドなどのメモ
 
-0. テストを実行できるようにする。
+## 0. テストを実行できるようにする。  
 フォークしたリポジトリからクローンして、README.mdの通りセットアップ。  
 
 scaffoldでひな形を作る。
@@ -13,6 +13,7 @@ scaffoldでひな形を作る。
 ```
 これで一通り土台はできた。localhost:3000で接続しようとしたがエラーが出た。調べたら以下が出た。
 > -  [https://k-koh.hatenablog.com/entry/2020/02/06/103517](https://k-koh.hatenablog.com/entry/2020/02/06/103517)  
+
 db:migrateしたら解決するらしい。早速やる。
 ```
     docker compose exec web rails db:migrate
@@ -51,7 +52,7 @@ db:migrateしたら解決するらしい。早速やる。
     docker compose exec web rails destroy scaffold  movie
 ```
 scaffoldが消えた。＋最初のマイグレーションファイルは維持。  
-scaffoldコマンドに1．データベースをMySQLに指定、2.マイグレーションファイルの作成をしない。としてやってみる。データベースの指定をしたことがなかったのでrailsドキと、[https://zenn.dev/nobokko/articles/tech_ruby_rails_mysql_table](https://zenn.dev/nobokko/articles/tech_ruby_rails_mysql_table)を参考にし
+scaffoldコマンドに1．データベースをMySQLに指定、2.マイグレーションファイルの作成をしない。としてやってみる。データベースの指定をしたことがなかったのでrailsドキュメントと、[https://zenn.dev/nobokko/articles/tech_ruby_rails_mysql_table](https://zenn.dev/nobokko/articles/tech_ruby_rails_mysql_table)を参考にし
 ```
     docker compose exec web rails  generate scaffold movie -db=mysql -migration false
 ```
@@ -64,7 +65,7 @@ scaffoldコマンドに1．データベースをMySQLに指定、2.マイグレ�
     docker compose exec web rails  generate scaffold movie -db=mysql -migration=false
 ```
 うまくいった。と思ったら、普通にマイグレーションファイルが生成されている。キーだけない。  
-あまりよくない方法だが、今回作られたマイグレーションファイルに元のマイグレーションファイルを一部コポーしようと思う。今回はこうするが、いずれ学習してどうすればいする。
+あまりよくない方法だが、今回作られたマイグレーションファイルに元のマイグレーションファイルを一部コピーしようと思う。今回はこうするが、いずれ学習してどうすればいする。
 マイグレーションファイルを書き込もうとしたが権限がなかった。ゆえに書き込みに行く。  
 書き込みにログインしてvimを起動しようとしたがvimがなかった。一時的に権限を変えてみる。以下参考
 > - [https://qiita.com/shisama/items/5f4c4fa768642aad9e06](https://qiita.com/shisama/items/5f4c4fa768642aad9e06)
@@ -108,7 +109,7 @@ OKだが、後で以下をして元に戻す。
 今回は、scaffoldで土台を作って、もともとあるファイルの内容だけ移植した。あまりよくない方法だが、現状の最善の方法として採用した。加えてルーティングも解決してくれるので最短でセットアップできる点からも、scaffoldは採用したかった。しかし別の方法も重要なので後で調べる。  
 (モデルとマイグレーションファイルを別々に作成してそれらを関連づける方法を調べる。)
 
-1. station 1
+## 1. station 1
 前述で最低限の土台を作ることができた。ここからは仕様に従って実装を進める。
 
 仕様によれば、映画のタイトルと画像を絞り込みなしにすべて表示するとある。ビューの作りこみなどは指定されていないのでここでは簡単に表に並べて表示してみる。
@@ -343,3 +344,5 @@ app/views/movies/index.html.erb を編集する。始めの方に表で表示す
 その前に一度現在の状態（ビューを編集する前）のコミットを作成しておく。今回リポジトリは自分のアカウントにフォークしているのでそのリポジトリにプッシュする。  
 （認識が間違っていたら修正。フォークリポジトリにプッシュするのはOK。プルリクエストを送らなければ元のリポジトリが変になることはない。また、プルリクエストを送ってしまったとしても管理者が許可しない限り大丈夫。加えてフォーク元のリポジトリにプッシュしたとしても権限がないので問題は発生しないはず。）  
 このあたりの知識が少ないので少し不安だが今回のケースは大丈夫だと思う。ゆえに実行する。
+
+コミットをしたらなぜかテストが実行された。実行されても一応は問題ないので今回は無視する。
