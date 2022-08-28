@@ -4,20 +4,20 @@ movie_0:
   name: "movie_0"
   year: "xxxx-yy-zz"
   description: "description of movie_0"
-  image_url: "URL_0"
+  image_url: "https://picsum.photos/id/42/300"
   is_showing: true
 
 movie_1:
   name: "movie_1"
   year: "xxxx-yy-zz"
   description: "description of movie_1"
-  image_url: "URL_1"
+  image_url: "https://picsum.photos/id/180/300"
   is_showing: true
 
 movie_2:
   name: "movie_2"
   year: "xxxx-yy-zz"
   description: "description of movie_2"
-  image_url: "URL_2"
+  image_url: "https://picsum.photos/id/188/300"
   is_showing: true
 

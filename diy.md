@@ -100,7 +100,7 @@ OKだが、後で以下をして元に戻す。
     docker compose exec web rails db:create
     docker compose exec web rails db:migrate
 ```
-データベースができた。これでもともとあったファイルと新しく作ったscaffoldにより生成されたファイルが結合できたのでhttp://localhost:3000/moviesと接続できるは
+データベースができた。これでもともとあったファイルと新しく作ったscaffoldにより生成されたファイルが結合できたので(http://localhost:3000/movies)と接続できるはず  
 →　OK接続できた。ビューテンプレートで生成されたものが表示されたので一応成功のはず。
 この段階で、一度テスト（VSCode上にある　「できた！」を押す）をしてみる。以前は有効なテストがありませんという回答が出た。
 
@@ -206,7 +206,8 @@ mysql: [Warning] Using a password on the command line interface can be insecure.
 ```
 とりあえず調べたら以下がヒットした。
 > - [https://zenn.dev/ryouzi/articles/a4fdff3c18e32a](https://zenn.dev/ryouzi/articles/a4fdff3c18e32a)  
-結論はデータベースコンテナいログインして、その状態でMySQLで接続といった流れらしい。早速やってみる。
+
+結論はデータベースコンテナにログインして、その状態でMySQLで接続といった流れらしい。早速やってみる。
 ```
 docker compose ps
 NAME                   COMMAND                  SERVICE             STATUS              PORTS
@@ -326,7 +327,7 @@ mysql> select * from movies;
 
 上記の通り作業を進める。  
 
-1. コントローラの確認。
+#### 1. コントローラの確認。
 確認した。以下の通り。(scaffoldで自動生成)
 ```
   # GET /movies or /movies.json
@@ -338,7 +339,7 @@ mysql> select * from movies;
 
 コントローラの確認はOK。
 
-2. ビューを編集。(index.html.erb)
+#### 2. ビューを編集。(index.html.erb)
 app/views/movies/index.html.erb を編集する。始めの方に表で表示するとしていたので、その方向で進めていく。
 
 その前に一度現在の状態（ビューを編集する前）のコミットを作成しておく。今回リポジトリは自分のアカウントにフォークしているのでそのリポジトリにプッシュする。  
@@ -346,3 +347,208 @@ app/views/movies/index.html.erb を編集する。始めの方に表で表示す
 このあたりの知識が少ないので少し不安だが今回のケースは大丈夫だと思う。ゆえに実行する。
 
 コミットをしたらなぜかテストが実行された。実行されても一応は問題ないので今回は無視する。
+
+コミットの作成完了。ここからビューを編集していく。
+
+自動生成されたビューは以下の通り。
+```
+<p id="notice"><%= notice %></p>
+
+<h1>Movies</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @movies.each do |movie| %>
+      <tr>
+        <td><%= link_to 'Show', movie %></td>
+        <td><%= link_to 'Edit', edit_movie_path(movie) %></td>
+        <td><%= link_to 'Destroy', movie, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<%= link_to 'New Movie', new_movie_path %>
+```
+不要そうなところがあるのでそれは消しておく。編集しようと思ったらまた権限がなかった。いつも通り変更する。  
+また、表には枠があったほうがわかりやすいので、以下を参考に枠をつける。
+> - [https://www.sejuku.net/blog/83489](https://www.sejuku.net/blog/83489)  
+
+また、今回使用するデータは、nameキーとimage_urlキーである。ゆえにまずそれぞれを文字として表示する。erbファイルなのでコードは以下の通り。
+```
+    <% @movies.reverse.each do |movie| %>
+      <tr>
+        <td><%= movie.image_url %></td>
+        <td><%= movie.name %></td>
+      </tr>
+    <% end %>
+```
+これで表示してみたところうまくいった。うまく0から順に上から表示され登録した文字列を文字としてきちんと表示することができた。  
+あとは、URLを設定し、src属性で画像として表示する。画像は問題文の通りpicsum.photosを使用してみる。以下参考
+> - [Lorem Picsum　〜とりあえず画像が欲しいあなたへ〜](https://qiita.com/MeJamoLeo/items/9c6b4f454f5531ead0c4)  
+
+このサイトは公式サイトからとってきたものだが、
+```
+    https://picsum.photos/200/300
+```
+というURLを指定することで幅200、高さ300の画像をランダムに表示してくれる。これをデータベースに流すことで今回は対応しようと思う。
+
+movies.ymlのimage_urlのデータを上記のURLに変更する。
+
+内容を変更したので変更を反映する。
+```
+    docker compose exec web rails db:fixtures:load FIXTURES=movies
+```
+ブラウザで映画イメージの列が変わっているか確認する。  
+→　OK。URLとして表示されている。次はタブの属性をsrcにする。
+
+src属性の書き方を忘れた。以下参考。
+> - [https://qumeru.com/magazine/462](https://qumeru.com/magazine/462)  
+
+うまくいったが、3つとも同じ画像が出てきて変なので、少し変える。以下参考。
+> - [【備忘録】ダミー画像「Lorem Picsum」でよく使う画像のID集](https://www.d-grip.com/blog/seisaku/5744)  
+
+一応、これでタイトルと画像をデータベースに登録している数（3つ）だけすべて表示することができた。
+
+これでテストしてみる。  
+→　OKクリアできた。
+
+### station 1 クリア
+完全にrubyとRuby on Rails初見だったのでかなり時間がかかった。それ以外にも、docker composeとMySQLについても経験がなかったので調べるのにかなり時間がかかってしまった。しかし、一番初めの何を書いているか一切わからないといった状態からは抜け出すことができた？と思うので良しとしようと思う。
+
+## staion 2
+### 1. データベースの編集
+テーブルにキーが追加されていたのでマイグレーションファイルを変更する。
+
+わからないことがあったので調べた以下参考。
+> - [Rails 5から導入されたmigration versioingについて](https://y-yagi.tumblr.com/post/137935511450/rails-5%E3%81%8B%E3%82%89%E5%B0%8E%E5%85%A5%E3%81%95%E3%82%8C%E3%81%9Fmigration-versioing%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6)  
+
+```
+ActiveRecord::Migration[6.1]
+```
+この6.1はバージョンを表していて本質的な意味はないようだ。  
+
+また、マイグレーションファイルのカラム名は元のファイルを使用していたが、書き方が調べてた内容（railsドキュメント）と合わなかったので修正した。  
+サーバに接続したところ問題なく表示されたのでOK。
+
+マイクレーションファイルに登録日時と更新日時を追加する。データ型はstring型でいいだろうか？ひとまずは公開年とおなじ型にする。  
+> - [マイグレーション(migration)](https://railsdoc.com/migration)  
+利用可能なメソッドに型を指定して作成するメソッドがあるのでそれを参考にする。
+
+また、最初のマイグレーションファイルのlimitは文字数（厳密には桁数）、commentはカラムのコメント、nullはNULL値を許可するかどうかでデフォルトはtrueである。それをもとに編集する。
+
+編集後、マイグレーションファイルを実行して更新する。
+```
+  docker compose exec web rails db:migrate
+```
+フィクスチャファイルの編集がまだであったが、データベースを確認すると以下の通りになった。
+```
+mysql> use app_development
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+mysql> select * from movies;
++-----------+---------+------------+------------------------+----------------------------------+------------+----------------------------+----------------------------+
+| id        | name    | year       | description            | image_url                        | is_showing | created_at                 | updated_at                 |
++-----------+---------+------------+------------------------+----------------------------------+------------+----------------------------+----------------------------+
+| 100400098 | movie_2 | xxxx-yy-zz | description of movie_2 | https://picsum.photos/id/188/300 |          1 | 2022-08-27 15:16:47.833425 | 2022-08-27 15:16:47.833425 |
+| 485665370 | movie_1 | xxxx-yy-zz | description of movie_1 | https://picsum.photos/id/180/300 |          1 | 2022-08-27 15:16:47.833425 | 2022-08-27 15:16:47.833425 |
+| 737516241 | movie_0 | xxxx-yy-zz | description of movie_0 | https://picsum.photos/id/42/300  |          1 | 2022-08-27 15:16:47.833425 | 2022-08-27 15:16:47.833425 |
++-----------+---------+------------+------------------------+----------------------------------+------------+----------------------------+----------------------------+
+3 rows in set (0.00 sec)
+```
+規定値？が入っている。おそらくキー属性に```null: false```にしていしているからであると思うが、規定値の設定はどこだろうか？  
+以下参考。
+> - [Docker で MySQL 起動時にデータの初期化を行う](https://qiita.com/moaikids/items/f7c0db2c98425094ef10)  
+
+今回は、この問題はあまり考えないことにする。とりあえず何かしらの時間らしき文字列が入力されることととらえる。
+
+これで一応データベースの方の設定はOKだとする。（少し解せないところはあるが、そこは本質ではなさそうなので飛ばす）
+
+### 2. adminコントローラ
+問題文を見ると、
+ - `GET /admin/movies`で現在表示されているmoviesの内容をすべて表示する。
+
+一応以下参考。
+> - [rails g コマンドが行なっていること](https://diveintocode.jp/blogs/Technology/RailsGenerateCommand)  
+
+ しかし心配なのは以下を実行するとコントローラ名が複数形になりそうだがどうなるだろうか？
+ ```
+ docker compose exec web rails generate controller admin
+```
+ルーティングを確認する。  
+→　何もない。
+
+本を参考にルーティングを設定。最適ではないが以下を設定する。
+```
+match ':controller/:action', via: [ :get, :post, :patch ]
+```
+その後、コントローラを設定。次を設定。
+```
+    #moviesデータベースと接続してデータを取り出す。
+    def movies
+        @movies = Movie.all
+    end
+```
+と思ったが、ヒントをみたが意味が正確に理解できないので調べた。
+> - [【初心者向け】管理者ユーザーと管理者用controllerの追加方法[Ruby, Rails]](https://qiita.com/sazumy/items/7ce8826615f1af605164)  
+これも少し違う感じがする。
+
+ゆえにadminコントローラの追加の仕方がちょっと変みたい。一度削除して再作成する。
+```
+docker compose exec web rails destroy controller admin
+```
+
+以下の記事を参考に次を試す。
+> - [コントローラとビューの生成](https://railsdoc.com/page/rails_generate_controller)  
+
+```
+docker compose exec web rails generate controller 'admin/movie'
+```
+これでうまくいったかもしれない。書き込み権限をつける。
+```
+sudo chmod 666 movie_controller.rb
+```
+ルーティングの設定はresourcesメソッドでとりあえず設定して、コントローラの設定movieモデルと同じにしてやってみる。
+
+これでコントローラからデータベースに接続ができるはずなので、station1のビューをコピーしてブラウザで表示してみる。  
+ルーティングの設定でエラーが出たので調べた。
+> - [https://qiita.com/ryosuketter/items/9240d8c2561b5989f049](https://qiita.com/ryosuketter/items/9240d8c2561b5989f049)  
+
+どうやらnamespaceで反復するのがいいらしい。とりあえず以下を試してみる。
+```
+  namespace :admin do
+    resources :movies
+  end
+```
+しかしエラーが出た。以下参考。
+> - [uninitialized constantのエラーをどう解決すべきか](https://qiita.com/imotan/items/c73fab5ee230114a08b6)  
+
+単語の複数形がしっかりと指定できていない。調整する。
+```
+以下をリネーム
+./app/controllers/admin/movie_contrller.rb → ./app/controllers/admin/movies_contrller.rb
+./views/admin/movie → ./views/admin/movies
+class Admin::MovieController < ApplicationController　を　class Admin::MoviesController < ApplicationController
+```
+これで一応表示ができた。  
+表示ができたのでとりあえずはAdmin::MoviesControllerの作成はできた。
+
+### 3. ビューの編集
+表示内容を変える。
+
+その前に一度テストを実行してみた。前回は有効なテストがないとエラーが出たがとりあえずテストが実行できる環境（Admin::MoviesControllerの設定？）ができた。おそらく各ステーションごとに何かしらテストを実行できるための設定があるのだろうか？
+
+spec/station_Xを見に行く。
+./spec/station02を見ると案の定`Admin::MoviesController`があったのでテストをするための設定はstationディレクトリのテストファイルを確認しに行くのがいいだろう。
+
+ひとまず、現状の段階で記録をつけておく。
