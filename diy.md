@@ -567,3 +567,137 @@ spec/station_Xを見に行く。
 
 ### station 2クリア
 新しいコントローラの作成、既存のモデルとの連携、名前空間で同一アクションを区別する、そういった要素を実践する内容だった。一番難しかったのは名前空間付きでコントローラを作成するところだった。読んでいた本でもそういったことはなかった（はず…。）なので少し迷った。しかしネットで調べて何とかなったので良かった。
+
+## 3. station 3
+### バックエンド側の設定。
+前のstationではコントローラを単体で作成した。ゆえに始めのようにnewアクションやcreateアクション、destroyアクションは作成されていない。ゆえにこれらに対して実装を施すことでクリアできると思う。
+
+このヒントはstation 1で作成した、scafffoldによって自動生成されたものが参考になるだろう。```./app/views/movies/new.html.erb```が新しいデータを登録するためのテンプレートファイルである。
+
+そのためまずは、始めの./app/views/movies/new.html.erb をコピーする。
+```
+sudo cp -v movies/new.html.erb admin/movies/
+cd admin/movies/
+sudo chmod 666 new.html.erb 
+```
+ルーティングは前回 `resources`メソッドを設定しているので、コントローラにnewアクションを設定すれば良いと思う。  
+```
+./config/routes.rb　の設定の一部
+  namespace :admin do
+    resources :movies
+  end
+```
+念のため `./app/controllers/movies_controller.rb`を確認するとつぎのような設定だった。
+```
+  # GET /movies/new
+  def new
+    @movie = Movie.new
+  end
+```
+これと同じ内容を設定する。(@movieが単数形になっているのが見落としてしまいそうだった。)  
+とりあえずバックエンド側の設定は以上である。ここからはビューの設定をしていく。
+
+### フロント側の設定。
+ビューファイルをコピーしていたが、部分テンプレートの部分をコピーしていなかったのでコピーする。一応ビューの内容を表示する。
+```
+./app/views/admin/movies/new.html.erbの内容
+<h1>New Movie</h1>
+
+<%= render 'form', movie: @movie %>
+
+<%= link_to 'Back', movies_path %>
+```
+部分テンプレートは、`sudo cp -v movies/_form.html.erb admin/movies/`でコピーしてきて、内容は
+```
+./app/views/admin/movies/_form.html.erbの内容
+
+<%= form_with(model: movie) do |form| %>
+  <% if movie.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(movie.errors.count, "error") %> prohibited this movie from being saved:</h2>
+
+      <ul>
+        <% movie.errors.each do |error| %>
+          <li><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="actions">
+    <%= form.submit %>
+  </div>
+<% end %>
+```
+といったようになっている。テンプレートの内容にデータベースのキーが入っていないのはscaffold機能で主キーを指定せずに作成したためであると考えられる。ゆえにまずこの部分テンプレートを編集して行こうと思う。
+
+一度`http://localhost:3000/admin/movies/new`に接続すると単純なページが表示されていることが確認できた。ゆえに部分テンプレートファイル、_form.html.erbを編集してデータベースにデータを追加できるように設定する。  
+railsの本を読んでるときに生成した_form.html.erbを開いて、参考にして記述する。
+
+ひとまず最低限のフォームの作成はできた。仕様に合わせて、概要はテキストエリア、上映中はチェックボックス、公開年は数値、登録・更新日時は年月日と時間を指定できるように設定した。そのほかは改行なしのテキスト入力を受け付けるようにした。
+
+ゆえにビューはできたはずだが、試しに実行したところエラーが出た。  
+```
+ActiveModel::ForbiddenAttributesError in MoviesController#create
+ActiveModel::ForbiddenAttributesError
+```
+どうやらバックエンド側の設定が完了していると思ったがそうではないそうだ。再度バックエンドの設定をしていく。
+
+### バックエンドの設定(再)
+おそらく、adminの名前空間中にcreateメソッドが記述されていないことが原因だと思われる。そのため、始めに作ったmovieコントローラからcreateメソッドをコピーして持ってくるとうまくいくのではないだろうか？早速やってみる。
+
+一応内容を記述する。
+```
+  # POST /movies or /movies.json
+  def create
+    @movie = Movie.new(movie_params)
+
+    respond_to do |format|
+      if @movie.save
+        format.html { redirect_to @movie, notice: "Movie was successfully created." }
+        format.json { render :show, status: :created, location: @movie }
+      else
+        format.html { render :new, status: :unprocessable_entity }
+        format.json { render json: @movie.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+```
+やってみたが違うそうだ。エラーを見るとAdmin::MoviesController ではなく、 MoviesController  が呼び出されている。それが原因だと思われる。  
+これは、おそらくビューで作成しているcrateボタンのURLが原因だと思われる。その周辺をしっかりと確認してみようと思う。
+
+ページのソースを確認するとアクションの指定が間違っていた。正しく合わせられるように調整する。以下参考。
+> - [モデルなどからフォームタグを生成](https://railsdoc.com/page/form_with)  
+
+上記を参考に部分テンプレートの上部を以下のように編集。
+```
+<%= form_with(model: movie, url: "/admin/movies") do |form| %>
+```
+上記の内容で提出すると、以下のエラーが出る。
+```
+NameError in Admin::MoviesController#create
+undefined local variable or method `movie_params' for #<Admin::MoviesController:0x0000000000f6e0>
+```
+これで指定のAdmin::MoviesControllerを使用することができたことはわかったが、以前のコピーがうまくいってない感じだった。エラー文を読むとmovie_paramsがないといっている。ゆえに元のMovieコントローラからその部分をコピーしてくる。以下に記す。
+```
+  private
+    # Use callbacks to share common setup or constraints between actions.
+    def set_movie
+      @movie = Movie.find(params[:id])
+    end
+
+    # Only allow a list of trusted parameters through.
+    def movie_params
+      params.fetch(:movie, {})
+    end
+```
+これでmovie_paramsの定義ができているはずなのでうまくいくはずだがどうだろう？
+
+エラーが出る。以下エラー文
+```
+ActiveModel::ForbiddenAttributesError in Admin::MoviesController#create
+ActiveModel::ForbiddenAttributesError
+```
+始めのエラーと同じエラーが出た。コントローラの設定がおかしいと思ったので別で実行して作成したコントローラと見比べるとmovie_paramsの書き方とcreateメソッドの書き方が違った。修正していこうと思う。
+
+現在の状況を記録するために一度コミットとプッシュを行う。
